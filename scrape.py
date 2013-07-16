@@ -10,7 +10,7 @@ import os
 import datetime
 from sanitize import sanitize
 
-def save_to(url, filename):
+def download_and_save(url, filename):
     data = urlopen(url).read()
     with open(filename, mode='w') as output:
         output.write(data)
@@ -20,6 +20,7 @@ def main():
     user_agent = settings['user_agent']
     image_extensions = settings['extensions']
     subreddits = settings['subreddits']
+    store_log = settings['store_log']
     alert = lambda s: print(s) if settings['verbose'] else None
     
     alert("Beginning web scrape.")
@@ -55,11 +56,10 @@ def main():
                     local_filename = os.path.join(subreddit_dir, '%s.%s' % (title, extension))
                     alert('Saving to %s' % local_filename)
 
-                    with open(os.path.join(base_dir, 'update.log'), 'a') as output:
-                        print >> output, '%s|%s|%s|%s' % (datetime.datetime.now(), local_filename, votes, url)
-                    save_to(url, local_filename)
-
-                    print
+                    if store_log:
+                        with open(os.path.join(base_dir, 'update.log'), 'a') as output:
+                            print >> output, '%s|%s|%s|%s' % (datetime.datetime.now(), local_filename, votes, url)
+                    download_and_save(url, local_filename)
 
             n_so_far += 1
             percent = int((100 * n_so_far) / total_n)
