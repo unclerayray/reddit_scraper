@@ -27,22 +27,19 @@ def download_and_save(url, filename):
 def main():
     ## Parse settings. TODO: allow argparse
     settings = eval(open('settings.txt', 'r').read())
-    user_agent = settings['user_agent']
     image_extensions = settings['extensions']
-    subreddits_dictionary = settings['subreddits']
     store_log = settings['store_log']
     alert = lambda s: print(s) if settings['verbose'] else None
     
     alert("Beginning web scrape.")
-    alert('Getting user agent...')
-    r = praw.Reddit(user_agent=user_agent)
+    r = praw.Reddit(user_agent=settings['user_agent'])
     alert('Got user agent.')
 
     ## Used for percent-completion alerts.
-    total_n = sum(len(v) for v in SUBREDDITS.values())
+    total_n = sum(len(v) for v in settings['subreddits'].values())
     n_so_far = 0.
 
-    for base_dir, subreddits_for_dir in subreddits_dictionary.iteritems():
+    for base_dir, subreddits_for_dir in settings['subreddits'].iteritems():
         for subreddit in subreddits_for_dir:
             subreddit_dir = os.path.join(base_dir, subreddit)
             if not os.path.exists(subreddit_dir):
@@ -52,20 +49,20 @@ def main():
             ## The API call
             submissions = r.get_subreddit(subreddit).get_top_from_day(limit=5)
 
-            alert('/r/%s' % subreddit)
+            alert(''.join(('/r/', subreddit)))
             for sub in submissions:
                 url = sub.url
-                alert('url is %s' % url)
+                alert(''.join(('url is ', url))
                 if any(sub.url.lower().endswith(ext.lower()) for ext in image_extensions):
                     alert('Found a picture.')
                     votes = '+%s,-%s' % (sub.ups, sub.downs)
                     extension = url.split('.')[-1]
-                    alert('Extension is %s' % extension)
+                    alert(''.join(('Extension is ', extension)))
                     title = sanitize(sub.title) # Remove illegal characters
                     if title.endswith('.'): title = title[:-1] # Fix foo..jpg
 
                     local_filename = os.path.join(subreddit_dir, '%s.%s' % (title, extension))
-                    alert('Saving to %s' % local_filename)
+                    alert(''.join(('Saving to ', local_filename)))
 
                     if store_log:
                         with open(os.path.join(base_dir, 'update.log'), 'a') as output:
@@ -76,7 +73,7 @@ def main():
             percent = int((100 * n_so_far) / total_n)
             alert("%d percent complete." % percent)
 
-            sleep(_REDDIT_API_SLEEP_TIME) # Avoid offending the Reddit API Gods!)
+            sleep(_REDDIT_API_SLEEP_TIME) # Avoid offending the Reddit API Gods!
     alert("Completed web scrape.")  
 
 if __name__ == '__main__':
