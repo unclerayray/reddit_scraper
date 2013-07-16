@@ -1,5 +1,5 @@
 # Settings.txt
-{ 'speak_progress_updates': False,
+{ 'verbose': False,
   'subreddits':
 { '/Path/to/a/directory/photos/cats':
     ["Cats",
