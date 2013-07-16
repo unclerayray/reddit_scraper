@@ -8,7 +8,6 @@ from time import sleep
 from urllib import urlopen
 import os
 import datetime
-now = datetime.datetime.now
 from sanitize import sanitize
 
 def save_to(url, filename):
@@ -57,7 +56,7 @@ def main():
                     alert('Saving to %s' % local_filename)
 
                     with open(os.path.join(base_dir, 'update.log'), 'a') as output:
-                        print >> output, '%s|%s|%s|%s' % (now(), local_filename, votes, url)
+                        print >> output, '%s|%s|%s|%s' % (datetime.datetime.now(), local_filename, votes, url)
                     save_to(url, local_filename)
 
                     print
