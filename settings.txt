@@ -1,0 +1,14 @@
+# Settings.txt
+{ 'speak_progress_updates': False,
+  'subreddits':
+{ '/Path/to/a/directory/photos/cats':
+    ["Cats",
+     "Kittens"],
+  '/Another/path/to/a/different/directory/for/wallpapers/this/time':
+    ["earthporn",
+     "wallpaper",
+     "wallpapers"]
+},
+  'user_agent': 'User-Agent: daily subreddit top-submission scraper v1.0 by /u/bluquar',
+  'extensions': ['.jpg', '.gif', '.png']
+}
