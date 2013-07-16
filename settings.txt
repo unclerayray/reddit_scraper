@@ -11,4 +11,5 @@
 },
   'user_agent': 'User-Agent: daily subreddit top-submission scraper v1.0 by /u/bluquar', # Don't change this please!
   'extensions': ['.jpg', '.gif', '.png'] # Add new extensions if you want, and let me know if you find bugs.
+  'store_log': True # Whether to store an updates.txt file in the scrape directory.
 }
