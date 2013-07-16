@@ -1,14 +1,14 @@
 # Settings.txt
 { 'verbose': False,
   'subreddits':
-{ '/Path/to/a/directory/photos/cats':
-    ["Cats",
+{ '/Path/to/a/directory/photos/cats': # Base Directory in which to store images scraped from these subreddits:
+    ["Cats", # The name of a subreddit (i.e., reddit.com/r/Cats --> "Cats")
      "Kittens"],
-  '/Another/path/to/a/different/directory/for/wallpapers/this/time':
+  '/Another/path/to/a/different/directory/for/wallpapers/this/time': # My OS chooses wallpapers from here!
     ["earthporn",
      "wallpaper",
      "wallpapers"]
 },
-  'user_agent': 'User-Agent: daily subreddit top-submission scraper v1.0 by /u/bluquar',
-  'extensions': ['.jpg', '.gif', '.png']
+  'user_agent': 'User-Agent: daily subreddit top-submission scraper v1.0 by /u/bluquar', # Don't change this please!
+  'extensions': ['.jpg', '.gif', '.png'] # Add new extensions if you want, and let me know if you find bugs.
 }
