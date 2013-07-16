@@ -1,7 +1,7 @@
 import praw
 
 try:
-    from alerts import say
+    import alerts
 except ImportError:
     pass # Not using OS X
 
@@ -15,6 +15,8 @@ from sanitize import sanitize
 SETTINGS = eval(open('settings.txt').read())
 USER_AGENT = SETTINGS['user_agent']
 IMAGE_EXTENSIONS = SETTINGS['extensions']
+SUBREDDITS = SETTINGS['subreddits']
+say = lambda s: None if not SETTINGS['speak_progress_updates'] else alerts.say(s)
 
 def _print_indented(s, tabs=1):
     print ''.join(['\t'*tabs, s])
