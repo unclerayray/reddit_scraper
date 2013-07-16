@@ -37,7 +37,22 @@ def download_and_save(url, filename):
     data = urlopen(url).read()
     with open(filename, mode='w') as output:
         output.write(data)
- 
+
+def fetch_image(submission, directory, store_log):
+    alert('Found a picture.')
+    votes = '+%s,-%s' % (submission.ups, submission.downs)
+    url = submission.url
+    extension = url.split('.')[-1]
+    alert(''.join(('Extension is ', extension)))
+    title = sanitize(submission.title) # Remove illegal characters
+    if title.endswith('.'): title = title[:-1] # Fix foo..jpg
+    local_filename = unique(os.path.join(directory, '%s.%s' % (title, extension)))
+    alert(''.join(('Saving to ', local_filename)))
+    if store_log:
+        with open(os.path.join(base_dir, 'update.log'), 'a') as output:
+            print >> output, '%s|%s|%s|%s' % (datetime.datetime.now(), local_filename, votes, url)
+    download_and_save(url, local_filename)
+
 def main():
     ## Parse settings. TODO: allow argparse
     settings = eval(open('settings.txt', 'r').read())
@@ -55,35 +70,21 @@ def main():
 
     for base_dir, subreddits_for_dir in settings['subreddits'].iteritems():
         for subreddit in subreddits_for_dir:
+            alert(''.join(('/r/', subreddit)))
             subreddit_dir = os.path.join(base_dir, subreddit)
             if not os.path.exists(subreddit_dir):
                 alert('Making %s' % subreddit_dir)
                 os.makedirs(subreddit_dir)
-
+                
             ## The API call
             submissions = r.get_subreddit(subreddit).get_top_from_day(limit=5)
-
-            alert(''.join(('/r/', subreddit)))
+            
             for sub in submissions:
                 url = sub.url
                 alert(''.join(('url is ', url))
                 if any(sub.url.lower().endswith(ext.lower()) for ext in image_extensions):
-                    alert('Found a picture.')
-                    votes = '+%s,-%s' % (sub.ups, sub.downs)
-                    extension = url.split('.')[-1]
-                    alert(''.join(('Extension is ', extension)))
-                    title = sanitize(sub.title) # Remove illegal characters
-                    if title.endswith('.'): title = title[:-1] # Fix foo..jpg
-
-                    local_filename = os.path.join(subreddit_dir, '%s.%s' % (title, extension))
-                    local_filename = unique(local_filename)
-                    alert(''.join(('Saving to ', local_filename)))
-
-                    if store_log:
-                        with open(os.path.join(base_dir, 'update.log'), 'a') as output:
-                            print >> output, '%s|%s|%s|%s' % (datetime.datetime.now(), local_filename, votes, url)
-                    download_and_save(url, local_filename)
-
+                    fetch_image(sub, subreddit_dir, store_log)   
+                    
             n_so_far += 1
             percent = int((100 * n_so_far) / total_n)
             alert("%d percent complete." % percent)
