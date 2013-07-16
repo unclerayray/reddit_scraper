@@ -10,9 +10,13 @@ from time import sleep
 from urllib import urlopen
 import os
 import datetime
-from sanitize import sanitize
+import string
 
-REDDIT_API_SLEEP_TIME = 2.50
+_REDDIT_API_SLEEP_TIME = 2.50
+_VALID_CHARS = frozenset(''.join(("-_.() ", string.ascii_letters, string.digits)))
+
+def sanitize(s):
+    return ''.join(c for c in s if c in _VALID_CHARS)
 
 def download_and_save(url, filename):
     """Saves the data at a given URL to a given local filename."""
@@ -72,7 +76,7 @@ def main():
             percent = int((100 * n_so_far) / total_n)
             alert("%d percent complete." % percent)
 
-            sleep(REDDIT_API_SLEEP_TIME) # Avoid offending the Reddit API Gods!)
+            sleep(_REDDIT_API_SLEEP_TIME) # Avoid offending the Reddit API Gods!)
     alert("Completed web scrape.")  
 
 if __name__ == '__main__':
