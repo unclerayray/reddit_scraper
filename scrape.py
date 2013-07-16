@@ -15,8 +15,22 @@ import string
 _REDDIT_API_SLEEP_TIME = 2.50
 _VALID_CHARS = frozenset(''.join(("-_.() ", string.ascii_letters, string.digits)))
 
-def sanitize(s):
-    return ''.join(c for c in s if c in _VALID_CHARS)
+def sanitize(s, default_name="image"):
+    sanitized = ''.join(c for c in s if c in _VALID_CHARS)
+    return sanitized if sanitized else default_name # Use default if string is empty.
+
+def unique(filename):
+    """Returns a guaranteed-unique version of a given filename."""
+    if not os.path.exists(filename):
+        return filename
+    else:
+        parts = filename.split('.')
+        parts.insert(-1, '%d') # Put a number before the extension.
+        filename_fmt = '.'.join(parts)
+        num = 0
+        while os.path.exists(filename_fmt % num):
+            num += 1
+        return filename_fmt % num
 
 def download_and_save(url, filename):
     """Saves the data at a given URL to a given local filename."""
@@ -62,6 +76,7 @@ def main():
                     if title.endswith('.'): title = title[:-1] # Fix foo..jpg
 
                     local_filename = os.path.join(subreddit_dir, '%s.%s' % (title, extension))
+                    local_filename = unique(local_filename)
                     alert(''.join(('Saving to ', local_filename)))
 
                     if store_log:
