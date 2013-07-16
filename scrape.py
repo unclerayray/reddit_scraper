@@ -57,8 +57,8 @@ def main():
                     votes = '+%s,-%s' % (sub.ups, sub.downs)
                     extension = url.split('.')[-1]
                     alert('Extension is %s' % extension)
-                    title = sanitize(sub.title)
-                    if title.endswith('.'): title = title[:-1]
+                    title = sanitize(sub.title) # Remove illegal characters
+                    if title.endswith('.'): title = title[:-1] # Fix foo..jpg
 
                     local_filename = os.path.join(subreddit_dir, '%s.%s' % (title, extension))
                     alert('Saving to %s' % local_filename)
