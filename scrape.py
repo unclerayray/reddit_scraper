@@ -9,6 +9,7 @@ except ImportError:
 from time import sleep
 from urllib import urlopen
 import os
+import sys
 import datetime
 import string
 
@@ -38,7 +39,7 @@ def download_and_save(url, filename):
     with open(filename, mode='w') as output:
         output.write(data)
 
-def fetch_image(submission, directory, store_log):
+def fetch_image(submission, directory, store_log, alert, base_dir):
     alert('Found a picture.')
     votes = '+%s,-%s' % (submission.ups, submission.downs)
     url = submission.url
@@ -58,7 +59,7 @@ def main():
     settings = eval(open('settings.txt', 'r').read())
     image_extensions = settings['extensions']
     store_log = settings['store_log']
-    alert = lambda s: print(s) if settings['verbose'] else None
+    alert = lambda s: sys.stdout.write(s+'\n') if settings['verbose'] else None
     
     alert("Beginning web scrape.")
     r = praw.Reddit(user_agent=settings['user_agent'])
@@ -81,9 +82,9 @@ def main():
             
             for sub in submissions:
                 url = sub.url
-                alert(''.join(('url is ', url))
+                alert(''.join(('url is ', url)))
                 if any(sub.url.lower().endswith(ext.lower()) for ext in image_extensions):
-                    fetch_image(sub, subreddit_dir, store_log)   
+                    fetch_image(sub, subreddit_dir, store_log, alert, base_dir)   
                     
             n_so_far += 1
             percent = int((100 * n_so_far) / total_n)
