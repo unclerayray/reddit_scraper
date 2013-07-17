@@ -54,9 +54,8 @@ def fetch_image(submission, directory, store_log, alert, base_dir):
             print >> output, '%s|%s|%s|%s' % (datetime.datetime.now(), local_filename, votes, url)
     download_and_save(url, local_filename)
 
-def main():
-    ## Parse settings. TODO: allow argparse
-    settings = eval(open('settings.txt', 'r').read())
+def scrape(settings):
+
     image_extensions = settings['extensions']
     store_log = settings['store_log']
     alert = lambda s: sys.stdout.write(s+'\n') if settings['verbose'] else None
@@ -92,6 +91,12 @@ def main():
 
             sleep(_REDDIT_API_SLEEP_TIME) # Avoid offending the Reddit API Gods!
     alert("Completed web scrape.")  
+
+
+def main():
+    ## Parse settings. TODO: allow argparse
+    settings = eval(open('settings.txt', 'r').read())
+    scrape(settings)
 
 if __name__ == '__main__':
     main()
