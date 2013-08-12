@@ -1,17 +1,25 @@
 # gui.py
 
 import Tkinter
+
+import settings
 import scrape
 import itertools
-
+                
 class ScraperWindow(object):
     def __init__(self):
         self.root = self.get_root()
-        self.settings = self.init_settings()
+        self.settings = settings.Settings()
         self.add_elements()
         self.add_listeners()
         self.root.after(100, self.center_window)
         self.root.mainloop()
+
+    def get_root(self):
+        """Create a new window."""
+        root = Tkinter.Tk()
+        root.title("Reddit Scraper")
+        return root
         
     def center_window(self):
         w = float(self.root.winfo_screenwidth())
@@ -20,54 +28,6 @@ class ScraperWindow(object):
         x = w/2 - rootsize[0]/2
         y = h/2 - rootsize[1]/2
         self.root.geometry("%dx%d+%d+%d" % (rootsize + (x, y)))
-
-    def init_settings(self):
-        settings = dict()
-        settings['verbose'] = False
-        settings['store_log'] = True
-        settings['subreddits'] = dict()
-        settings['user_agent'] = 'User-Agent: daily subreddit top-submission scraper v1.0 by /u/bluquar'
-        settings['extensions'] = ['.jpg', '.gif', '.png']
-        return settings
-
-    def get_saved_settings(self):
-        return eval(open('settings.txt', 'r').read())
-
-    def load(self):
-        self.settings = self.get_saved_settings()
-        self.remove_sr_placeholder()
-        reddits = self.settings['subreddits']
-        subs = itertools.chain(*reddits.itervalues())
-        for sub in subs:
-            self.listbox.insert(Tkinter.END, sub)
-
-    def get_root(self):
-        root = Tkinter.Tk()
-        root.title("Reddit Scraper")
-        return root
-        
-    def add_subreddit(self):
-        self.remove_sr_placeholder()
-        text = self.entry_field.get()
-        self.listbox.insert(Tkinter.END, text)
-
-    def remove_subreddit(self):
-        pass
-
-    def save(self):
-        pass
-
-    def remove_sr_placeholder(self):
-        for i in xrange(self.listbox.size()):
-            if self.listbox.get(i) == "<Subreddits>":
-                index = i
-                break
-        else:
-            return
-        self.listbox.delete(index)
-
-    def add_directory(self):
-        pass
 
     def add_elements(self):
         root = self.root
@@ -109,8 +69,37 @@ class ScraperWindow(object):
     def add_listeners(self):
         pass
         # bind some things
+
+    def update_gui(self):
+        pass
+
+    def remove_sr_placeholder(self):
+        for i in xrange(self.listbox.size()):
+            if self.listbox.get(i) == "<Subreddits>":
+                index = i
+                break
+        else:
+            return
+        self.listbox.delete(index)
+
+        
+    def add_subreddit(self):
+        self.remove_sr_placeholder()
+        text = self.entry_field.get()
+        self.listbox.insert(Tkinter.END, text)
+
+    def remove_subreddit(self):
+        pass
+
+    def save(self):
+        pass
+
+    def load(self):
+        self.settings.load()
+        self.update_gui()
+    
+    def add_directory(self):
+        pass
         
     def scrape(self):
         scrape.scrape(self.settings)
-        # This shouldn't all be contained in main() anymore, in scrape.py
-    
