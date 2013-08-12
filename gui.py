@@ -1,6 +1,8 @@
 # gui.py
 
 import Tkinter
+import functools
+wraps = functools.wraps
 
 import settings
 import scrape
@@ -9,9 +11,10 @@ import itertools
 class ScraperWindow(object):
     def __init__(self):
         self.root = self.get_root()
+        self.state = GUIState()
         self.settings = settings.Settings()
         self.add_elements()
-        self.add_listeners()
+        self.update_gui()
         self.root.after(100, self.center_window)
         self.root.mainloop()
 
@@ -29,77 +32,97 @@ class ScraperWindow(object):
         y = h/2 - rootsize[1]/2
         self.root.geometry("%dx%d+%d+%d" % (rootsize + (x, y)))
 
+    def scrape(self):
+        scrape.scrape(self.settings)
+
     def add_elements(self):
         root = self.root
+        self.add_groupings_pane(root)
+        self.add_subreddits_pane(root)
+        self.add_details_pane(root)
 
-        ## Subreddit command pane.
-        command_frame = Tkinter.Frame(root)
-        command_buttons = [("Scrape", self.scrape, 0, 0),
-                           ("Load", self.load, 0, 1),
-                           ("Save", self.save, 0, 2),
-                           ("Add", self.add_subreddit, 1, 1),
-                           ("Remove", self.remove_subreddit, 1, 2)]
-        
-        for text, command, row, col in command_buttons:
-            Tkinter.Button(command_frame, text=text, command=command).grid(row=row, column=col)
-
-        self.entry_field = Tkinter.Entry(command_frame)
-        self.entry_field.grid(row=1, column=0)
-
-        command_frame.grid(row=0, column=2)
-
-        ## Subreddit listbox.
-        self.listbox = Tkinter.Listbox(root)
-        self.listbox.grid(row=0, column=3)
-        self.listbox.insert(Tkinter.END, "<Subreddits>")
-
-        ## Directory command pane.
-        directory_frame = Tkinter.Frame(root)
-        directory_buttons = [("Add Directory", self.add_directory, 0, 0)]
+    def add_groupings_pane(self, root):
+        pane = Tkinter.Frame(root)
+        # List of directories,
+        # Add directory button,
+        groupings_buttons = [("Add Directory", self.add_directory, 0, 0)]
         for text, command, row, col in directory_buttons:
-            Tkinter.Button(directory_frame, text=text, command=command).grid(row=row, column=col)
+            Tkinter.Button(pane, text=text, command=command).grid(row=row, column=col)
 
-        directory_frame.grid(row=0, column=0)
+        # Reomve directory button,
+        # Enable/Disable button
+        # Scrape all button
+        # Load/Save
+        pane.grid(row=0, column=0)
 
-        ## Directory listbox.
-        self.directory_listbox = Tkinter.Listbox(root)
-        self.directory_listbox.grid(row=0, column=1)
-        self.directory_listbox.insert(Tkinter.END, "<Directories>")
+    def add_subreddits_pane(self, root):
+        pane = Tkinter.Frame(root)
+
+        # List of subreddits,
+        self.subreddit_listbox = Tkinter.Listbox(pane)
+        self.subreddit_listbox.grid(row=0, column=0)
+        self.subreddit_listbox.insert(Tkinter.END, '<Subreddits>')
         
-    def add_listeners(self):
-        pass
-        # bind some things
+        # Add subreddit button
+        # Remove subreddit button
+        # Create folder for each subreddit (checkbox)
+        # Scrape all button
+        pane.grid(row=0, column=1)
+
+    def add_detials_pane(self, root):
+        pane = Tkinter.Frame(root)
+        # Subreddit name
+        # Number of files to download (INC/DEC)
+        # File types to include (list box?) (ADD/REM)
+        # Enable/Disable button (CHECK BOX)
+        # Last scraped (LABEL)
+        # Open folder in finder/explorer (BUTTON)
+        # Scrape now button
+        pane.grid(row=0, column=2)
+        
+
 
     def update_gui(self):
         pass
 
-    def remove_sr_placeholder(self):
-        for i in xrange(self.listbox.size()):
-            if self.listbox.get(i) == "<Subreddits>":
-                index = i
-                break
-        else:
-            return
-        self.listbox.delete(index)
-
-        
+    @gui
     def add_subreddit(self):
+        # This should just be:
+        # Settings[self.state.grouping].add_subreddit(...)
+        # These things should directly change SETTINGS and the state variables
         self.remove_sr_placeholder()
         text = self.entry_field.get()
         self.listbox.insert(Tkinter.END, text)
 
+    @gui
     def remove_subreddit(self):
         pass
 
+    @gui
     def save(self):
         pass
 
+    @gui
     def load(self):
         self.settings.load()
         self.update_gui()
-    
+
+    @gui
     def add_directory(self):
         pass
-        
-    def scrape(self):
-        scrape.scrape(self.settings)
+
+def gui(fn):
+    @wraps
+    def updater(self, *args, **kwargs):
+        val = fn(*args, **kwargs)
+        self.update_gui()
+        return val
+    return updater
+
+class GUIState(object):
+    def __init__(self, data=None):
+        default = {'grouping': None,
+                   'subreddit': None}
+        if data is not None:
+            default.update(data)
+        self.__dict__.update(default)
