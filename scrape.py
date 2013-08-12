@@ -1,4 +1,4 @@
-__doc__ = """Scrapes images linked to from specified subreddits."""
+"""Scrape images linked to from specified subreddits."""
 
 try:
     import praw
@@ -21,7 +21,7 @@ def sanitize(s, default_name="image"):
     return sanitized if sanitized else default_name # Use default if string is empty.
 
 def unique(filename):
-    """Returns a guaranteed-unique version of a given filename."""
+    """Return a guaranteed-unique version of a given filename."""
     if not os.path.exists(filename):
         return filename
     else:
@@ -34,7 +34,7 @@ def unique(filename):
         return filename_fmt % num
 
 def download_and_save(url, filename):
-    """Saves the data at a given URL to a given local filename."""
+    """Save the data at a given URL to a given local filename."""
     data = urlopen(url).read()
     with open(filename, mode='w') as output:
         output.write(data)
@@ -49,7 +49,6 @@ def fetch_image(submission, directory, store_log, base_dir):
     download_and_save(url, local_filename)
 
 def scrape(settings):
-    
     r = praw.Reddit(user_agent=settings.user_agent)
 
     for grouping in settings.groupings:
