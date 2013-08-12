@@ -7,6 +7,14 @@ wraps = functools.wraps
 import settings
 import scrape
 import itertools
+
+def gui(fn):
+    @wraps(fn)
+    def updater(self, *args, **kwargs):
+        val = fn(self, *args, **kwargs)
+        self.update_gui()
+        return val
+    return updater
                 
 class ScraperWindow(object):
     def __init__(self):
@@ -45,8 +53,8 @@ class ScraperWindow(object):
         pane = Tkinter.Frame(root)
         # List of directories,
         # Add directory button,
-        groupings_buttons = [("Add Directory", self.add_directory, 0, 0)]
-        for text, command, row, col in directory_buttons:
+        grouping_buttons = [("Add Directory", self.add_directory, 0, 0)]
+        for text, command, row, col in grouping_buttons:
             Tkinter.Button(pane, text=text, command=command).grid(row=row, column=col)
 
         # Reomve directory button,
@@ -69,7 +77,7 @@ class ScraperWindow(object):
         # Scrape all button
         pane.grid(row=0, column=1)
 
-    def add_detials_pane(self, root):
+    def add_details_pane(self, root):
         pane = Tkinter.Frame(root)
         # Subreddit name
         # Number of files to download (INC/DEC)
@@ -80,10 +88,8 @@ class ScraperWindow(object):
         # Scrape now button
         pane.grid(row=0, column=2)
         
-
-
     def update_gui(self):
-        pass
+        print 'updating!'
 
     @gui
     def add_subreddit(self):
@@ -109,15 +115,8 @@ class ScraperWindow(object):
 
     @gui
     def add_directory(self):
+        print 'hello'
         pass
-
-def gui(fn):
-    @wraps
-    def updater(self, *args, **kwargs):
-        val = fn(*args, **kwargs)
-        self.update_gui()
-        return val
-    return updater
 
 class GUIState(object):
     def __init__(self, data=None):
