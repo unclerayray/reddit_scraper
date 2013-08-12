@@ -1,7 +1,7 @@
 Reddit Scraper
 =======
 
-Run __main__.py or simply `python .` from inside the directory. This will run the GUI.
+Run `__main__.py` or simply `python .` from inside the directory. This will run the GUI.
 Once you have configured your settings using the GUI, running `python scrape.py` will
 use your saved settings. You can then easily schedule the scraper to run daily.
 
