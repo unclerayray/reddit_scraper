@@ -35,11 +35,12 @@ def unique(filename):
 
 def download_and_save(url, filename):
     """Save the data at a given URL to a given local filename."""
+    print 'saving:', url
     data = urlopen(url).read()
     with open(filename, mode='w') as output:
         output.write(data)
 
-def fetch_image(submission, directory, store_log, base_dir):
+def fetch_image(submission, directory):
     votes = '+%s,-%s' % (submission.ups, submission.downs)
     url = submission.url
     extension = url.split('.')[-1]
@@ -48,23 +49,27 @@ def fetch_image(submission, directory, store_log, base_dir):
     local_filename = unique(os.path.join(directory, '%s.%s' % (title, extension)))
     download_and_save(url, local_filename)
 
-def scrape(settings):
+def scrape(settings, include_sub=None, include_dir=None):
     r = praw.Reddit(user_agent=settings.user_agent)
 
     for grouping in settings.groupings:
+        if include_dir is not None and grouping.name not in include_dir:
+            continue
         for subreddit in grouping.subreddits:
+            if include_sub is not None and subreddit.name not in include_sub:
+                continue
             dirname = grouping.dirname_for(subreddit)
             if not os.path.exists(dirname):
-
                 os.makedirs(dirname)
-            extensions = set(subreddit.file_types)
 
-            submissions = r.get_subreddit(subreddit.name).get_top_from_day(limit=5)
+            extensions = set(subreddit.file_types)
+            limit = subreddit.num_files
+            submissions = r.get_subreddit(subreddit.name).get_top_from_day(limit=limit)
             for sub in submissions:
                 url = sub.url
-                if any(sub.url.lower().endswith(ext.lower()) for ext in image_extensions):
-                    fetch_image(sub, dirname, store_log)  
-                    
+                if any(sub.url.lower().endswith(ext.lower()) for ext in extensions):
+                    fetch_image(sub, dirname)
+
             sleep(_REDDIT_API_SLEEP_TIME) # Avoid offending the Reddit API Gods!
 
 

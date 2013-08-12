@@ -1,5 +1,6 @@
 import os
 import json
+import tkMessageBox
 
 class Settings(object):
     basename = 'config.json'
@@ -60,17 +61,35 @@ class Settings(object):
         return raw_data        
 
     def add_grouping(self, dirname):
-        self.data['groupings'][dirname] = Grouping({'directory_name': dirname})
+        existing_dirnames = set([d.name for d in self.groupings])
+        if dirname in existing_dirnames:
+            tkMessageBox.askokcancel("", "You have already entered that directory.")
+            return None
+        existing_shortnames = set([d.shortname for d in self.groupings])
+        parts = dirname.split(os.path.sep)
+        shortname = None
+        for i in xrange(len(parts)):
+            shortname = os.path.sep.join(parts[-1-i:])
+            if shortname not in existing_shortnames:
+                break
+        self.data['groupings'][dirname] = Grouping({'directory_name': dirname,
+                                                    'shortname': shortname})
 
     def __getitem__(self, index):
-        return self.data['groupings'][index]
+        if index in self.data['groupings']:
+            return self.data['groupings'][index]
+        else:
+            for grouping in self.groupings:
+                if grouping.shortname == index:
+                    return grouping
     
 class Grouping(object):
     def __init__(self, data):
         self.data = {'directory_name': None,
                      'subdir_per_subreddit': True,
                      'enabled': True,
-                     'subreddits': []}
+                     'subreddits': [],
+                     'shortname': None}
         self.data.update(data)
         self.parse_subreddits()
 
@@ -103,6 +122,13 @@ class Grouping(object):
         return self.data['directory_name']
 
     @property
+    def shortname(self):
+        if self.data['shortname'] is None:
+            return self.name
+        else:
+            return self.data['shortname']
+
+    @property
     def enabled(self):
         return self.data['enabled']
 
@@ -116,7 +142,7 @@ class Grouping(object):
 class Subreddit(object):
     def __init__(self, data):
         self.data = {'subreddit_name': None,
-                     'num_files': 0,
+                     'num_files': 5,
                      'file_types': ['JPG', 'PNG', 'GIF'],
                      'last_scraped': 'Never'}
         self.data.update(data)
@@ -127,6 +153,10 @@ class Subreddit(object):
     @property
     def num_files(self):
         return self.data['num_files']
+    @num_files.setter
+    def _(self, val):
+        self.data['num_files'] = val
+    
     @property
     def file_types(self):
         return self.data['file_types']
