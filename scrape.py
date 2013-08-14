@@ -35,7 +35,6 @@ def unique(filename):
 
 def download_and_save(url, filename):
     """Save the data at a given URL to a given local filename."""
-    print 'saving:', url
     data = urlopen(url).read()
     with open(filename, mode='w') as output:
         output.write(data)
@@ -51,16 +50,18 @@ def fetch_image(submission, directory):
 
 def scrape(settings, include_sub=None, include_dir=None):
     r = praw.Reddit(user_agent=settings.user_agent)
-
     for grouping in settings.groupings:
-        if include_dir is not None and grouping.name not in include_dir:
+        if ((include_dir is not None and grouping.name not in include_dir) or
+            not grouping.enabled):
             continue
         for subreddit in grouping.subreddits:
-            if include_sub is not None and subreddit.name not in include_sub:
+            if ((include_sub is not None and subreddit.name not in include_sub) or
+                not subreddit.enabled):
                 continue
             dirname = grouping.dirname_for(subreddit)
             if not os.path.exists(dirname):
                 os.makedirs(dirname)
+            yield dirname
 
             extensions = set(subreddit.file_types)
             limit = subreddit.num_files

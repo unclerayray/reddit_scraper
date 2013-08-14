@@ -10,10 +10,7 @@ class Settings(object):
 
     def _init_data(self):
         """Load data or, create new data if there is no save file."""
-        if os.path.exists(self.filename):
-            self.load()
-        else:
-            self.reset()
+        self.load()
         return self.data
         
     def _get_directory(self, dirname):
@@ -35,18 +32,24 @@ class Settings(object):
     def groupings(self):
         return self.data['groupings'].values()
     
-    def reset(self, save=False):
+    def reset(self, save=True):
         self.data = {"groupings": {},
                      "user_agent": 'User-Agent: daily subreddit top-submission scraper v0.1 by /u/bluquar'}
-
-    def load(self):
-        if not os.path.exists(self.filename):
+        if save:
             self.save()
-        with open(self.filename) as f:
-            try:
-                self.data = self.parse(json.loads(f.read()))
-            except ValueError:
+
+    def load(self, explicit=False):
+        if not os.path.exists(self.filename):
+            if explicit:
+                raise NameError("Could not find config.json")
+            else:
                 self.reset()
+        else:
+            with open(self.filename) as f:
+                try:
+                    self.data = self.parse(json.loads(f.read()))
+                except ValueError:
+                    raise ValueError("Unable to read the configuration file.")
 
     def save(self):
         data_dict = dict(self.data)
@@ -74,6 +77,15 @@ class Settings(object):
                 break
         self.data['groupings'][dirname] = Grouping({'directory_name': dirname,
                                                     'shortname': shortname})
+
+    def __delitem__(self, index):
+        if index in self.data['groupings']:
+            del self.data['groupings'][index]
+        else:
+            for key, grouping in self.data['groupings'].iteritems():
+                if grouping.shortname == index:
+                    del self.data['groupings'][key]
+                    break
 
     def __getitem__(self, index):
         if index in self.data['groupings']:
@@ -132,24 +144,38 @@ class Grouping(object):
     def enabled(self):
         return self.data['enabled']
 
+    def enable(self):
+        self.data['enabled'] = not self.data['enabled']
+
     @property
     def subdir_per_subreddit(self):
         return self.data['subdir_per_subreddit']
 
+    def __delitem__(self, index):
+        del self.data['subreddits'][index]
+    
     def __getitem__(self, index):
-        return self.data['subreddits'][index]
+        return (self.data['subreddits'][index] if index
+                in self.data['subreddits'] else None)
 
 class Subreddit(object):
     def __init__(self, data):
         self.data = {'subreddit_name': None,
                      'num_files': 5,
+                     'enabled': True,
                      'file_types': ['JPG', 'PNG', 'GIF'],
                      'last_scraped': 'Never'}
         self.data.update(data)
 
+    def enable(self):
+        self.data['enabled'] = not self.data['enabled']
+
     @property
     def name(self):
         return self.data['subreddit_name']
+    @property
+    def enabled(self):
+        return self.data['enabled']
     @property
     def num_files(self):
         return self.data['num_files']

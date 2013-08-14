@@ -4,6 +4,9 @@ import Tkinter
 import tkFileDialog
 import tkSimpleDialog
 import tkMessageBox
+import requests
+import subprocess
+import os
 
 import functools
 wraps = functools.wraps
@@ -60,11 +63,29 @@ class ScraperWindow(object):
         y = h/2 - rootsize[1]/2
         self.root.geometry("%dx%d+%d+%d" % (rootsize + (x, y)))
 
-    def scrape(self):
-        scrape.scrape(self.settings)
+    def scrape_all(self):
+        self._scrapes(None, None)
 
     def scrape_current_sub(self):
-        scrape.scrape(self.settings, include_sub={self.state.subreddit})
+        if self.subreddit:
+            self._scrapes([self.subreddit.name], None)
+        else:
+            tkMessageBox.askokcancel("", "Please select a subreddit to scrape.")
+
+    def scrape_current_dir(self):
+        if self.grouping:
+            self._scrapes(None, [self.grouping.name])
+        else:
+            tkMessageBox.askokcancel("", "Please select a directory to scrape.")
+            
+    def _scrapes(self, include_sub, include_dir, expose=True):
+        try:
+            for dirname in scrape.scrape(self.settings, include_sub=include_sub, include_dir=include_dir):
+                reveal(dirname)
+        except requests.ConnectionError:
+            tkMessageBox.askokcancel("Connection Error",
+                                     "Could not connect to Reddit. Check your internet settings, "
+                                     "and make sure Reddit isn't down.")
 
     def add_elements(self):
         root = self.root
@@ -76,17 +97,45 @@ class ScraperWindow(object):
         pane = Tkinter.Frame(root)
         # List of directories,
         self.grouping_listbox = Tkinter.Listbox(pane)
-        self.grouping_listbox.grid(row=0, column=0, columnspan=2, sticky=Tkinter.N)
+        self.grouping_listbox.grid(row=0, column=0, sticky=Tkinter.N)
         self.grouping_listbox.bind('<Button-1>', self.grouping_listbox_click)
 
+
+        ###
+        ### MAKE A ROW_1 FRAME AND .PACK() EVERYTHING IN THERE
+        ###
         # Add directory button,
-        add_dir_button = Tkinter.Button(pane, text="Add Directory", command=self.add_directory)
-        add_dir_button.grid(row=1, column=0, sticky=Tkinter.W)
+
+        row_1_frame = Tkinter.Frame(pane)
+        
+        add_dir_button = Tkinter.Button(row_1_frame, text=" + ", command=self.add_directory)
+        add_dir_button.pack(side=Tkinter.LEFT)
 
         # Reomve directory button,
+        del_dir_button = Tkinter.Button(row_1_frame, text=" - ", command=self.del_directory)
+        del_dir_button.pack(side=Tkinter.LEFT)
+        
         # Enable/Disable button
+        self.enable_button = Tkinter.Button(row_1_frame, text="Disable", command=self.enable)
+        self.enable_button.pack(side=Tkinter.LEFT)
+
+        row_1_frame.grid(row=1, column=0)
+        
         # Scrape all button
+        scrape_all_button = Tkinter.Button(pane, text="Scrape All", command=self.scrape_all)
+        scrape_all_button.grid(row=2, column=0)
+
+        row_3_frame = Tkinter.Frame(pane)
+        
         # Load/Save
+        load_button = Tkinter.Button(row_3_frame, text="Load", command=self.load)
+        load_button.pack(side = Tkinter.LEFT)
+
+        save_button = Tkinter.Button(row_3_frame, text="Save", command=self.save)
+        save_button.pack(side=Tkinter.LEFT)
+
+        row_3_frame.grid(row=3, column=0)
+        
         pane.grid(row=0, column=0)
 
 
@@ -95,17 +144,31 @@ class ScraperWindow(object):
 
         # List of subreddits,
         self.subreddit_listbox = Tkinter.Listbox(pane)
-        self.subreddit_listbox.grid(row=0, column=0, columnspan=2, sticky=Tkinter.N)
+        self.subreddit_listbox.grid(row=0, column=0, columnspan=3, sticky=Tkinter.N)
         self.subreddit_listbox.bind('<Button-1>', self.subreddit_listbox_click)
 
 
+        row_1_frame = Tkinter.Frame(pane)
+
         # Add subreddit button
-        add_sub_button = Tkinter.Button(pane, text="Add Subreddit", command=self.add_subreddit)
-        add_sub_button.grid(row=1, column=0, sticky=Tkinter.W)
+        add_sub_button = Tkinter.Button(row_1_frame, text=" + ", command=self.add_subreddit)
+        add_sub_button.pack(side=Tkinter.LEFT)
 
         # Remove subreddit button
+        del_sub_button = Tkinter.Button(row_1_frame, text=" - ", command=self.del_subreddit)
+        del_sub_button.pack(side=Tkinter.LEFT)
+
+        # Enable/Disable button
+        self.enable_sub_button = Tkinter.Button(row_1_frame, text="Disable", command=self.enable_sub)
+        self.enable_sub_button.pack(side=Tkinter.LEFT)
+
+        row_1_frame.grid(row=1, column=0, columnspan=3)
+
+        self.scrape_dir_button = Tkinter.Button(pane, text="Scrape Directory", command=self.scrape_current_dir)
+        self.scrape_dir_button.grid(row=2, column=0, columnspan=2)
+        
         # Create folder for each subreddit (checkbox)
-        # Scrape all button
+
         pane.grid(row=0, column=1)
 
     def add_details_pane(self, root):
@@ -132,28 +195,22 @@ class ScraperWindow(object):
         # Last scraped (LABEL)
         # Open folder in finder/explorer (BUTTON)
         # Scrape now button
-        self.scrape_now_button = Tkinter.Button(pane, text="Scrape Now", command=self.scrape_current_sub)
+        self.scrape_now_button = Tkinter.Button(pane, text="Scrape Subreddit", command=self.scrape_current_sub)
         self.scrape_now_button.grid(row=4, column=0, columnspan=2)
         
         pane.grid(row=0, column=2)
 
+    @gui
     def grouping_listbox_click(self, event):
         index = self.grouping_listbox.nearest(event.y)
         self.state.grouping = self.grouping_listbox.get(index)
-        for i in xrange(self.grouping_listbox.size()):
-            self.grouping_listbox.itemconfig(i, bg=BLANK_COLOR)
-        self.grouping_listbox.itemconfig(index, bg=SELECTION_COLOR)
-        event.widget.selection_clear(0, Tkinter.END)
 
+    @gui
     def subreddit_listbox_click(self, event):
         if self.grouping is None:
             return
         index = self.subreddit_listbox.nearest(event.y)
         self.state.subreddit = self.subreddit_listbox.get(index)
-        for i in xrange(self.subreddit_listbox.size()):
-            self.subreddit_listbox.itemconfig(i, bg=BLANK_COLOR)
-        self.subreddit_listbox.itemconfig(index, bg=SELECTION_COLOR)
-        event.widget.selection_clear(0, Tkinter.END)
 
     @property
     def grouping(self):
@@ -171,9 +228,26 @@ class ScraperWindow(object):
         if not desired_grouping_listbox:
             desired_grouping_listbox = ['<Directories>']
         self._listbox_update(self.grouping_listbox, desired_grouping_listbox)
-        #
-        # Make the selected one a particular color
-        #
+
+        # Color
+        for i in xrange(self.grouping_listbox.size()):
+            grp = self.settings[self.grouping_listbox.get(i)]
+            if grp is None or grp.enabled:
+                fg_color = 'black'
+            else:
+                fg_color = 'gray'
+            self.grouping_listbox.itemconfig(i, bg=BLANK_COLOR, fg=fg_color)
+        if self.state.grouping:
+            index = self.grouping_listbox.get(0, Tkinter.END).index(self.state.grouping)
+            self.grouping_listbox.itemconfig(index, bg=SELECTION_COLOR)
+            self.grouping_listbox.selection_clear(0, Tkinter.END)
+
+        ## Enable buttons
+        self.enable_button.config(text='      ' if not self.grouping else
+                                  'Disable' if self.grouping.enabled else 'Enable')
+        self.enable_sub_button.config(text='      ' if not self.subreddit else
+                                      'Disable' if self.subreddit.enabled else 'Enable')
+
 
         ## Subreddit listbox
         if self.grouping is None:
@@ -183,6 +257,19 @@ class ScraperWindow(object):
         if not desired_subreddit_listbox:
             desired_subreddit_listbox = ['<Subreddits>']
         self._listbox_update(self.subreddit_listbox, desired_subreddit_listbox)
+
+        # Color
+        for i in xrange(self.subreddit_listbox.size()):
+            sub = None if not self.grouping else self.grouping[self.state.subreddit]
+            if sub is None or sub.enabled:
+                fg_color = 'black'
+            else:
+                fg_color = 'gray'
+            self.subreddit_listbox.itemconfig(i, bg=BLANK_COLOR, fg=fg_color)
+        if self.state.subreddit:
+            index = self.subreddit_listbox.get(0, Tkinter.END).index(self.state.subreddit)
+            self.subreddit_listbox.itemconfig(index, bg=SELECTION_COLOR)
+            self.subreddit_listbox.selection_clear(0, Tkinter.END)
 
         ## Details Frame
         if self.subreddit is not None:
@@ -223,24 +310,71 @@ class ScraperWindow(object):
             self.grouping.add_subreddit(s)
 
     @gui
-    def remove_subreddit(self):
-        pass
+    def del_subreddit(self):
+        if self.subreddit:
+            current_items = list(self.subreddit_listbox.get(0, Tkinter.END))
+            current_idx = current_items.index(self.subreddit.name)
+            del self.grouping[self.subreddit.name]
+            del current_items[current_idx]
+            if current_items:
+                new_idx = max(0, min(len(current_items)-1, current_idx))
+                self.state.subreddit = current_items[new_idx]
+            else:
+                self.state.subreddit = None
+        else:
+            tkMessageBox.askokcancel("", "Please select a subreddit to remove.")
 
     @gui
     def save(self):
-        pass
+        self.settings.save()
 
     @gui
-    def load(self):
-        self.settings.load()
-        self.update_gui()
+    def load(self, explicit=True):
+        try:
+            self.settings.load(explicit)
+        except ValueError:
+            reset = tkMessageBox.askokcancel("", "Cannot read your config file. Reset?")
+            if reset:
+                self.settings.reset()
+        except NameError:
+            reset = tkMessageBox.askokcancel("", "No config file found. Create a new one?")
+            if reset:
+                self.settings.reset()
+        self.state = GUIState()
 
     @gui
     def add_directory(self):
         dirname = tkFileDialog.askdirectory()
         if dirname:
             self.settings.add_grouping(dirname)
-        self.state.grouping = dirname
+            self.state.grouping = self.settings[dirname].shortname
+
+    @gui
+    def del_directory(self):
+        if self.grouping:
+            current_items = list(self.grouping_listbox.get(0, Tkinter.END))
+            current_idx = current_items.index(self.grouping.shortname)
+            del self.settings[self.state.grouping]
+            del current_items[current_idx]
+            if current_items:
+                new_idx = max(0, min(len(current_items)-1, current_idx))
+                self.state.grouping = current_items[new_idx]
+            else:
+                self.state.grouping = None
+            
+        else:
+            tkMessageBox.askokcancel("", "Please select a directory to remove.")
+
+    @gui
+    def enable(self):
+        if self.grouping:
+            self.grouping.enable()
+
+    @gui
+    def enable_sub(self):
+        if self.subreddit:
+            self.subreddit.enable()
+            
 
 class GUIState(object):
     def __init__(self, grouping=None, subreddit=None):
@@ -248,3 +382,19 @@ class GUIState(object):
         self.subreddit = subreddit
     def tuple(self):
         return (self.grouping, self.subreddit)
+
+def reveal(direc, raised=[False]):
+    if raised[0]:
+        # No need to try again - we already know an exception will
+        # be raised.
+        return
+    if not os.path.exists(direc):
+        raise ValueError("Could not find %s" % direc)
+    try:
+        if os.path.isdir(direc):
+            subprocess.call(['open', direc])
+        else:
+            subprocess.call(['open', '-R', direc])
+    except:
+        # Non-unixy
+        raised[0] = True
