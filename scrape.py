@@ -37,7 +37,7 @@ def unique(filename):
 def download_and_save(url, filename):
     """Save the data at a given URL to a given local filename."""
     data = urlopen(url).read()
-    with open(filename, mode='w') as output:
+    with open(filename, mode='wb') as output:
         output.write(data)
 
 def fetch_image(submission, directory):
