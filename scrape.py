@@ -11,6 +11,7 @@ from urllib import urlopen
 import os
 import sys
 import datetime
+import settings as settings_
 import string
 
 _REDDIT_API_SLEEP_TIME = 2.50
@@ -66,11 +67,16 @@ def scrape(settings, include_sub=None, include_dir=None):
             extensions = set(subreddit.file_types)
             limit = subreddit.num_files
             submissions = r.get_subreddit(subreddit.name).get_top_from_day(limit=limit)
+            count = 0
             for sub in submissions:
                 url = sub.url
                 if any(sub.url.lower().endswith(ext.lower()) for ext in extensions):
                     fetch_image(sub, dirname)
+                    count += 1
+            yield count
 
             sleep(_REDDIT_API_SLEEP_TIME) # Avoid offending the Reddit API Gods!
 
-
+if __name__ == '__main__':
+    settings = settings_.Settings()
+    list(scrape(settings))

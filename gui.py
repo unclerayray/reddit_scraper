@@ -30,6 +30,7 @@ class ScraperWindow(object):
     def __init__(self):
         self.root = self.get_root()
         self.state = GUIState()
+        self.filetype = None
         self.settings = settings.Settings()
         self.add_elements()
         self.update_gui()
@@ -39,11 +40,23 @@ class ScraperWindow(object):
 
     def start_timer(self):
         self.prev_state = self.state.tuple()
+        self.prev_entry = ''
         self.root.after(100, self.timer)
 
     def timer(self):
+        if self.number_of_files_entry.get() != self.prev_entry:
+            num = self._int_in_entry(self.number_of_files_entry)
+            if num is not None:
+                self.subreddit.num_files = num
+        self._entry_update(self.number_of_files_entry, self.subreddit.num_files if
+                           self.subreddit else '')
+
+        self.prev_entry = self.number_of_files_entry.get()
+
+        
         self.grouping_listbox.selection_clear(0, Tkinter.END)
         self.subreddit_listbox.selection_clear(0, Tkinter.END)
+        self.file_types_listbox.selection_clear(0, Tkinter.END)
         if not self.prev_state == self.state.tuple():
             self.update_gui()
         self.prev_state = self.state.tuple()
@@ -78,14 +91,21 @@ class ScraperWindow(object):
         else:
             tkMessageBox.askokcancel("", "Please select a directory to scrape.")
             
-    def _scrapes(self, include_sub, include_dir, expose=True):
+    def _scrapes(self, include_sub, include_dir, expose=True, alert_when_done=True):
         try:
-            for dirname in scrape.scrape(self.settings, include_sub=include_sub, include_dir=include_dir):
-                reveal(dirname)
+            count = 0
+            for x in scrape.scrape(self.settings, include_sub=include_sub, include_dir=include_dir):
+                if isinstance(x, int):
+                    count += x
+                    continue
+                if expose:
+                    reveal(x)
         except requests.ConnectionError:
             tkMessageBox.askokcancel("Connection Error",
                                      "Could not connect to Reddit. Check your internet settings, "
                                      "and make sure Reddit isn't down.")
+        else:
+            tkMessageBox.askokcancel("", "Scrape Complete! %d files downloaded." % count)
 
     def add_elements(self):
         root = self.root
@@ -100,14 +120,9 @@ class ScraperWindow(object):
         self.grouping_listbox.grid(row=0, column=0, sticky=Tkinter.N)
         self.grouping_listbox.bind('<Button-1>', self.grouping_listbox_click)
 
-
-        ###
-        ### MAKE A ROW_1 FRAME AND .PACK() EVERYTHING IN THERE
-        ###
-        # Add directory button,
-
         row_1_frame = Tkinter.Frame(pane)
-        
+
+        # Add directory button,        
         add_dir_button = Tkinter.Button(row_1_frame, text=" + ", command=self.add_directory)
         add_dir_button.pack(side=Tkinter.LEFT)
 
@@ -144,9 +159,8 @@ class ScraperWindow(object):
 
         # List of subreddits,
         self.subreddit_listbox = Tkinter.Listbox(pane)
-        self.subreddit_listbox.grid(row=0, column=0, columnspan=3, sticky=Tkinter.N)
+        self.subreddit_listbox.grid(row=0, column=0, sticky=Tkinter.N)
         self.subreddit_listbox.bind('<Button-1>', self.subreddit_listbox_click)
-
 
         row_1_frame = Tkinter.Frame(pane)
 
@@ -162,12 +176,14 @@ class ScraperWindow(object):
         self.enable_sub_button = Tkinter.Button(row_1_frame, text="Disable", command=self.enable_sub)
         self.enable_sub_button.pack(side=Tkinter.LEFT)
 
-        row_1_frame.grid(row=1, column=0, columnspan=3)
+        row_1_frame.grid(row=1, column=0)
 
         self.scrape_dir_button = Tkinter.Button(pane, text="Scrape Directory", command=self.scrape_current_dir)
-        self.scrape_dir_button.grid(row=2, column=0, columnspan=2)
+        self.scrape_dir_button.grid(row=2, column=0)
         
         # Create folder for each subreddit (checkbox)
+        self.persub  = Tkinter.Checkbutton(pane, command=self.persub)
+        self.persub.grid(row=3, column=0)
 
         pane.grid(row=0, column=1)
 
@@ -175,29 +191,43 @@ class ScraperWindow(object):
         pane = Tkinter.Frame(root, width=500)
         # Subreddit name
         self.subreddit_name_label = Tkinter.Label(pane, text='', anchor=Tkinter.N)
-        self.subreddit_name_label.grid(row=0, column=0, columnspan=2)
+        self.subreddit_name_label.grid(row=0, column=0)
 
         # Number of files to download (INC/DEC)
-        self.number_of_files_label = Tkinter.Label(pane, text='Files to Download:')
-        self.number_of_files_label.grid(row=1, column=0)
+        row_1_frame = Tkinter.Frame(pane)
+        
+        self.number_of_files_label = Tkinter.Label(row_1_frame, text='Files to Download:')
+        self.number_of_files_label.pack(side=Tkinter.LEFT)
 
-        self.number_of_files_entry = Tkinter.Entry(pane, width=3)
-        self.number_of_files_entry.grid(row=1, column=1)
+        self.number_of_files_entry = Tkinter.Entry(row_1_frame, width=3)
+        self.number_of_files_entry.pack(side=Tkinter.LEFT)
+
+        row_1_frame.grid(row=1, column=0)
 
         # File types to include (list box?) (ADD/REM)
         self.file_types_label = Tkinter.Label(pane, text="Include these extensions:")
-        self.file_types_label.grid(row=2, column=0, columnspan=2)
+        self.file_types_label.grid(row=2, column=0)
         
         self.file_types_listbox = Tkinter.Listbox(pane, height=5)
-        self.file_types_listbox.grid(row=3, column=0, columnspan=2)
+        self.file_types_listbox.grid(row=3, column=0)
+        self.file_types_listbox.bind('<Button-1>', self.file_types_listbox_click)
 
-        # Enable/Disable button (CHECK BOX)
+        row_4_frame = Tkinter.Frame(pane)
+        add_ext_button = Tkinter.Button(row_4_frame, text=' + ', command=self.add_ext)
+        add_ext_button.pack(side=Tkinter.LEFT)
+
+        del_ext_button = Tkinter.Button(row_4_frame, text=' - ', command=self.del_ext)
+        del_ext_button.pack(side=Tkinter.LEFT)
+
+        row_4_frame.grid(row=4, column=0)
+        
         # Last scraped (LABEL)
         # Open folder in finder/explorer (BUTTON)
+        
         # Scrape now button
         self.scrape_now_button = Tkinter.Button(pane, text="Scrape Subreddit", command=self.scrape_current_sub)
-        self.scrape_now_button.grid(row=4, column=0, columnspan=2)
-        
+        self.scrape_now_button.grid(row=5, column=0)
+
         pane.grid(row=0, column=2)
 
     @gui
@@ -211,6 +241,20 @@ class ScraperWindow(object):
             return
         index = self.subreddit_listbox.nearest(event.y)
         self.state.subreddit = self.subreddit_listbox.get(index)
+
+    @gui
+    def file_types_listbox_click(self, event):
+        if self.subreddit is None:
+            return
+        index = self.file_types_listbox.nearest(event.y)
+        self.filetype = self.file_types_listbox.get(index)
+        if self.filetype == '<Extensions>':
+            self.filetype = None
+
+    def persub(self):
+        print "BAM"
+        print self.persub.cget('onvalue')
+        print self.persub.cget('variable')
 
     @property
     def grouping(self):
@@ -274,17 +318,21 @@ class ScraperWindow(object):
         ## Details Frame
         if self.subreddit is not None:
             self.subreddit_name_label.config(text='/r/'+self.state.subreddit)
-            desired_num = str(self.subreddit.num_files)
-            if self.number_of_files_entry.get() != desired_num:
-                self.number_of_files_entry.delete(0, Tkinter.END)
-                self.number_of_files_entry.insert(0, desired_num)
+            #self._entry_update(self.number_of_files_entry, self.ubreddit.num_files)
             desired_filetypes = self.subreddit.file_types
             self._listbox_update(self.file_types_listbox, desired_filetypes)
         else:
             self.subreddit_name_label.config(text='')
-            self.number_of_files_entry.delete(0, Tkinter.END)
-            self._listbox_update(self.file_types_listbox, [])
+            self.filetype = None
+            #self._entry_update(self.number_of_files_entry, '')
+            self._listbox_update(self.file_types_listbox, ['<Extensions>'])
 
+        ## Color
+        for i in xrange(self.file_types_listbox.size()):
+            self.file_types_listbox.itemconfig(i, bg=BLANK_COLOR)
+        if self.filetype:
+            index = self.file_types_listbox.get(0, Tkinter.END).index(self.filetype)
+            self.file_types_listbox.itemconfig(index, bg=SELECTION_COLOR)
 
     def _listbox_update(self, listbox, desired_values):
         current_values = listbox.get(0, Tkinter.END)
@@ -296,6 +344,18 @@ class ScraperWindow(object):
         for item in to_add:
             listbox.insert(Tkinter.END, item)
 
+    def _entry_update(self, entry, desired_text):
+        desired_text = str(desired_text)
+        if entry.get() != desired_text:
+            entry.delete(0, Tkinter.END)
+            entry.insert(0, desired_text)
+
+    def _int_in_entry(self, entry):
+        contents = entry.get()
+        if contents == '': return 0
+        contents = ''.join(c for c in contents if c in '0123456789.')
+        if contents == '': return None
+        return int(float(contents))
 
     @gui
     def add_subreddit(self):
@@ -323,6 +383,32 @@ class ScraperWindow(object):
                 self.state.subreddit = None
         else:
             tkMessageBox.askokcancel("", "Please select a subreddit to remove.")
+
+    @gui
+    def add_ext(self):
+        if self.subreddit is None:
+            tkMessageBox.askokcancel("", "Please select a subreddit first.")
+        else:
+            s = tkSimpleDialog.askstring("Add an extension", "Enter the extension:")
+            if not s:
+                return
+            s = s.upper().strip('.')
+            self.subreddit.add_file_type(s)
+
+    @gui
+    def del_ext(self):
+        if self.filetype:
+            current_items = list(self.file_types_listbox.get(0, Tkinter.END))
+            current_idx = current_items.index(self.filetype)
+            self.subreddit.rm_filetype(self.filetype)
+            del current_items[current_idx]
+            if current_items:
+                new_idx = max(0, min(len(current_items)-1, current_idx))
+                self.filetype = current_items[new_idx]
+            else:
+                self.filetype = None
+        else:
+            tkMessageBox.askokcancel("", "Please select an extension to remove.")
 
     @gui
     def save(self):

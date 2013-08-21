@@ -180,12 +180,18 @@ class Subreddit(object):
     def num_files(self):
         return self.data['num_files']
     @num_files.setter
-    def _(self, val):
+    def num_files(self, val):
         self.data['num_files'] = val
     
     @property
     def file_types(self):
         return self.data['file_types']
+
+    def add_file_type(self, s):
+        self.data['file_types'].append(s)
+    def rm_filetype(self, s):
+        self.data['file_types'].remove(s)
+    
     @property
     def last_scraped(self):
         return self.data['last_scraped']
