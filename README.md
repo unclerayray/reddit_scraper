@@ -1,13 +1,18 @@
 Reddit Scraper
 =======
 
-Configure by simply editing settings.txt, and you'll be ready to run scrape.py.
+Run `__main__.py` or simply `python .` from inside the directory. This will run the GUI.
+Once you have configured your settings using the GUI, running `python scrape.py` will
+use your saved settings. You can then easily schedule the scraper to run daily.
 
-Choose which subreddits you want to scrape from. The scraper will take the top 5 highest rated posts on those subreddits from today, and save any images to the specified directory. For example, you could scrape the top posts from /r/wallpapers into your wallpaper folder. Set up a cron job to do this every day and you will get a new wallpaper every day :)
+Alternately, you may manually create `config.json` and then run `scrape.py`.
 
-TODO:
+Reddit Scraper allows you to scrape the top images (or other file formats) 
+from selected subreddits into selected directories on your machine.
+You may configure how many files to scrape, what extensions to include,
+which subreddits to scrape from, and which directories to write to.
 
-* Allow greater configuration in settings.txt
+The GUI needs a lot of work but this is essentially usable. 
 
 Uses Python Reddit API Wrapper: https://github.com/praw-dev/praw
 `pip install praw`
