@@ -447,6 +447,7 @@ class ScraperWindow(object):
         if dirname:
             self.settings.add_grouping(dirname)
             self.state.grouping = self.settings[dirname].shortname
+            self.state.subreddit = None
 
     @gui
     def del_directory(self):
@@ -458,6 +459,7 @@ class ScraperWindow(object):
             if current_items:
                 new_idx = max(0, min(len(current_items)-1, current_idx))
                 self.state.grouping = current_items[new_idx]
+                self.state.subreddit = None
             else:
                 self.state.grouping = None
             
