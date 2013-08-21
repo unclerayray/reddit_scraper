@@ -182,8 +182,17 @@ class ScraperWindow(object):
         self.scrape_dir_button.grid(row=2, column=0)
         
         # Create folder for each subreddit (checkbox)
-        self.persub  = Tkinter.Checkbutton(pane, command=self.persub)
-        self.persub.grid(row=3, column=0)
+
+        row_3_frame = Tkinter.Frame(pane)
+        
+        self.persubvar = Tkinter.BooleanVar(row_3_frame)
+        self.persubbutton  = Tkinter.Checkbutton(row_3_frame, command=self.persub, var=self.persubvar)
+        self.persubbutton.pack(side=Tkinter.LEFT)
+        self.persublabel = Tkinter.Label(row_3_frame, text='Create a directory for each subreddit',
+                                         wraplength=130)
+        self.persublabel.pack(side=Tkinter.LEFT)
+
+        row_3_frame.grid(row=3, column=0)
 
         pane.grid(row=0, column=1)
 
@@ -234,6 +243,7 @@ class ScraperWindow(object):
     def grouping_listbox_click(self, event):
         index = self.grouping_listbox.nearest(event.y)
         self.state.grouping = self.grouping_listbox.get(index)
+        self.state.subreddit = None
 
     @gui
     def subreddit_listbox_click(self, event):
@@ -252,9 +262,8 @@ class ScraperWindow(object):
             self.filetype = None
 
     def persub(self):
-        print "BAM"
-        print self.persub.cget('onvalue')
-        print self.persub.cget('variable')
+        if self.grouping:
+            self.grouping.subdir_per_subreddit = self.persubvar.get()
 
     @property
     def grouping(self):
@@ -314,6 +323,10 @@ class ScraperWindow(object):
             index = self.subreddit_listbox.get(0, Tkinter.END).index(self.state.subreddit)
             self.subreddit_listbox.itemconfig(index, bg=SELECTION_COLOR)
             self.subreddit_listbox.selection_clear(0, Tkinter.END)
+
+        # Checkbox
+        if self.grouping:
+            self.persubvar.set(self.grouping.subdir_per_subreddit)
 
         ## Details Frame
         if self.subreddit is not None:

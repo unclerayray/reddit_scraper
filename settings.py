@@ -150,6 +150,10 @@ class Grouping(object):
     @property
     def subdir_per_subreddit(self):
         return self.data['subdir_per_subreddit']
+    @subdir_per_subreddit.setter
+    def subdir_per_subreddit(self, val):
+        self.data['subdir_per_subreddit'] = val
+
 
     def __delitem__(self, index):
         del self.data['subreddits'][index]
