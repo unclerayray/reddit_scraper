@@ -37,7 +37,7 @@ def unique(filename):
 def download_and_save(url, filename):
     """Save the data at a given URL to a given local filename."""
     data = urlopen(url).read()
-    with open(filename, mode='w') as output:
+    with open(filename, mode='wb') as output:
         output.write(data)
 
 def fetch_image(submission, directory):
@@ -49,7 +49,15 @@ def fetch_image(submission, directory):
     local_filename = unique(os.path.join(directory, '%s.%s' % (title, extension)))
     download_and_save(url, local_filename)
 
-def scrape(settings, include_sub=None, include_dir=None):
+def get_submissions(subred, limit, timeframe):
+    methname = 'get_top_from_%s' % timeframe
+    print 'limit is', limit
+    if hasattr(subred, methname):
+        return getattr(subred, methname)(limit=limit)
+    else:
+        raise ValueError('Unrecognized timeframe: %s' %  timeframe)
+
+def scrape(settings, include_sub=None, include_dir=None, timeframe='day', limits=None):
     r = praw.Reddit(user_agent=settings.user_agent)
     for grouping in settings.groupings:
         if ((include_dir is not None and grouping.name not in include_dir) or
@@ -65,8 +73,10 @@ def scrape(settings, include_sub=None, include_dir=None):
             yield dirname
 
             extensions = set(subreddit.file_types)
-            limit = subreddit.num_files
-            submissions = r.get_subreddit(subreddit.name).get_top_from_day(limit=limit)
+            limit = subreddit.num_files if limits is None else limits
+            subred = r.get_subreddit(subreddit.name)
+            submissions = get_submissions(subred, limit, timeframe)
+
             count = 0
             for sub in submissions:
                 url = sub.url

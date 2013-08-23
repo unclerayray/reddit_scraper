@@ -76,25 +76,29 @@ class ScraperWindow(object):
         y = h/2 - rootsize[1]/2
         self.root.geometry("%dx%d+%d+%d" % (rootsize + (x, y)))
 
-    def scrape_all(self):
-        self._scrapes(None, None)
+    def scrape_all(self, timeframe='day', limits=None):
+        self._scrapes(None, None, timeframe=timeframe, limits=limits)
 
-    def scrape_current_sub(self):
+    def scrape_current_sub(self, timeframe='day', limits=None):
         if self.subreddit:
-            self._scrapes([self.subreddit.name], None)
+            self._scrapes([self.subreddit.name], None, timeframe=timeframe,
+                          limits=limits)
         else:
             tkMessageBox.askokcancel("", "Please select a subreddit to scrape.")
 
-    def scrape_current_dir(self):
+    def scrape_current_dir(self, timeframe='day', limits=None):
         if self.grouping:
-            self._scrapes(None, [self.grouping.name])
+            self._scrapes(None, [self.grouping.name], timeframe=timeframe,
+                          limits=limits)
         else:
             tkMessageBox.askokcancel("", "Please select a directory to scrape.")
             
-    def _scrapes(self, include_sub, include_dir, expose=True, alert_when_done=True):
+    def _scrapes(self, include_sub, include_dir, expose=True, alert_when_done=True,
+                 timeframe='day', limits=None):
         try:
             count = 0
-            for x in scrape.scrape(self.settings, include_sub=include_sub, include_dir=include_dir):
+            for x in scrape.scrape(self.settings, include_sub=include_sub, include_dir=include_dir,
+                                   timeframe=timeframe, limits=limits):
                 if isinstance(x, int):
                     count += x
                     continue
@@ -381,7 +385,15 @@ class ScraperWindow(object):
             if s.startswith('/r/'):
                 s = s[len('/r/'):]
             self.grouping.add_subreddit(s)
+            self.state.subreddit = s
+            self.ask_for_all_time()
 
+    def ask_for_all_time(self):
+        if tkMessageBox.askokcancel("Added Subreddit", "Successfully added /r/%s!"% self.subreddit.name +
+                                    " Scrape this subreddit's history now?"):
+            
+            self.scrape_current_sub(timeframe='all', limits=20)
+            
     @gui
     def del_subreddit(self):
         if self.subreddit:
