@@ -34,11 +34,31 @@ def unique(filename):
             num += 1
         return filename_fmt % num
 
-def download_and_save(url, filename):
+def download_and_save(url, filename, directory_data):
     """Save the data at a given URL to a given local filename."""
     data = urlopen(url).read()
+    if is_duplicate(data,  directory_data):
+        return
     with open(filename, mode='wb') as output:
         output.write(data)
+
+def is_duplicate(data, directory_data):
+    h = hash(data)
+    if h in directory_data:
+        with open(directory_data[h]) as fid:
+            existing_data = fid.read()
+        return existing_data == data
+    return False
+
+def scan_hash(dirname):
+    sub_items = os.listdir(dirname)
+    filenames = (os.path.join(dirname, f) for f in sub_items)
+    filenames = (f for f in filenames if not os.path.isdir(f))
+    data = {}
+    for f in filenames:
+        with open(f) as fid:
+            data[hash(fid.read())] = f
+    return data
 
 def fetch_image(submission, directory):
     votes = '+%s,-%s' % (submission.ups, submission.downs)
@@ -47,11 +67,11 @@ def fetch_image(submission, directory):
     title = sanitize(submission.title) # Remove illegal characters
     if title.endswith('.'): title = title[:-1] # Fix foo..jpg
     local_filename = unique(os.path.join(directory, '%s.%s' % (title, extension)))
-    download_and_save(url, local_filename)
+    directory_data = scan_hash(directory)
+    download_and_save(url, local_filename, directory_data)
 
 def get_submissions(subred, limit, timeframe):
     methname = 'get_top_from_%s' % timeframe
-    print 'limit is', limit
     if hasattr(subred, methname):
         return getattr(subred, methname)(limit=limit)
     else:
