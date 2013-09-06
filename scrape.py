@@ -4,7 +4,7 @@ try:
     import praw
 except ImportError:
     print "Unable to find praw. see https://github.com/praw-dev/praw"
-    raise()
+    raise
 
 from time import sleep
 from urllib import urlopen
