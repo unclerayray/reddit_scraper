@@ -19,7 +19,7 @@ _VALID_CHARS = frozenset(''.join(("-_.() ", string.ascii_letters, string.digits)
 
 def sanitize(s, default_name="image"):
     sanitized = ''.join(c for c in s if c in _VALID_CHARS)
-    return sanitized if sanitized else default_name # Use default if string is empty.
+    return sanitized[:0xFF] if sanitized else default_name # Use default if string is empty.
 
 def unique(filename):
     """Return a guaranteed-unique version of a given filename."""
